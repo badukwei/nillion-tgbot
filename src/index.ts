@@ -33,7 +33,6 @@ bot.command('store', async (ctx) => {
 });
 bot.command('list', list());
 bot.on('callback_query', handleCallbackQuery());
-bot.command('delete', deleteValue());
 bot.command('create', createUserStoreID())
 bot.command('retrieve', retrieveValue());
 bot.command('about', about());
