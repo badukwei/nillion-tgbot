@@ -8,13 +8,6 @@ import { author, name, version } from '../../package.json';
 
 const debug = createDebug('bot:about_command');
 
-export const about = () => async (ctx: Context) => {
-  const message = `*${name} ${version}*\n${author}`;
-  debug(`Triggered "about" command with message \n${message}`);
-  await ctx.replyWithMarkdownV2(message, { parse_mode: 'Markdown' });
-  await autoDeleteMessage(ctx);
-};
-
 export const autoDeleteMessage = async (ctx: Context, timeoutMs: number = 5000) => {
   const message = await ctx.update;
   if ('message' in message && message.message) {
