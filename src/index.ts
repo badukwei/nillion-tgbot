@@ -3,6 +3,7 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import { development, production } from './core';
 import axios from 'axios';
 import { help, about, list, retrieveValue, storeValue, handleCallbackQuery, createUserStoreID } from './commands';
+import { autoDeleteMessage } from './utils/utils';
 
 import createDebug from 'debug';
 const debug = createDebug('bot:index');
@@ -49,6 +50,9 @@ bot.on('photo', async (ctx) => {
   }
 
   try {
+    // Store the message ID for deletion
+    const uploadMessageId = ctx.message.message_id;
+    
     const photos = ctx.message.photo;
     const highestResPhoto = photos[photos.length - 1];
     const fileId = highestResPhoto.file_id;
@@ -60,6 +64,10 @@ bot.on('photo', async (ctx) => {
 
     userStoreStates[userId].action = 'awaiting_name';
     userStoreStates[userId].imageName = base64Image;
+    
+    // Delete the original upload message
+    await autoDeleteMessage(ctx, uploadMessageId);
+    
     await ctx.reply('Image received! Now, please send a name for the image.');
   } catch (error) {
     debug('Error processing image:', error);
@@ -83,7 +91,7 @@ bot.on('text', async (ctx) => {
   }
 
   try {
-    const storeId = await storeValue(userId.toString(), base64Image, imageName);
+    const storeId = await storeValue(ctx, userId.toString(), base64Image, imageName);
     delete userStoreStates[userId]; 
 
     await ctx.reply(`Image stored successfully!\nStore ID: ${storeId}`);

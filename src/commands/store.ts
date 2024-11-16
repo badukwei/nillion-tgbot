@@ -2,12 +2,12 @@ import { Context } from 'telegraf';
 import createDebug from 'debug';
 import { compressImage } from '../utils/utils';
 import { saveUserStoreId, getUserAppId } from '../core/database';
-
+import { autoDeleteMessage } from '../utils/utils';
 const debug = createDebug('bot:store_command');
 
 const API_BASE = 'https://nillion-storage-apis-v0.onrender.com';
 
-export const storeValue = async (userSeed: string, base64Image: string, secretName: string) => {
+export const storeValue = async (ctx: Context, userSeed: string, base64Image: string, secretName: string) => {
     try {
         const appId = await getUserAppId(Number(userSeed));
         if (!appId) {
@@ -38,6 +38,7 @@ export const storeValue = async (userSeed: string, base64Image: string, secretNa
         const result = await response.json();
 
         // Save to local database with thumbnail
+        
         await saveUserStoreId(
             Number(userSeed),
             result.store_id,
