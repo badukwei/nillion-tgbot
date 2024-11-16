@@ -14,6 +14,13 @@ export const production = async (
   bot: Telegraf<Context<Update>>,
 ) => {
   debug('Bot runs in production mode');
+  debug('Environment variables check:', {
+    BOT_TOKEN: !!process.env.BOT_TOKEN,
+    KV_URL: !!process.env.KV_REST_API_URL,
+    KV_TOKEN: !!process.env.KV_REST_API_TOKEN,
+    USER_SEED: !!process.env.USER_SEED,
+    VERCEL_URL: process.env.VERCEL_URL
+  });
 
   try {
     const webhookUrl = `https://${process.env.VERCEL_URL}/api`;
@@ -48,6 +55,8 @@ export const production = async (
     }
   } catch (error) {
     debug('Production error:', error);
+    debug('Production error:', error);
+    console.error('Full error details:', error);
     throw error;
   }
 };
