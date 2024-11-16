@@ -1,12 +1,11 @@
 import { Context, Markup } from "telegraf";
-import { getUserStoreIds } from '../core/database';
+import { getUserStoreIds, getUserAppId } from '../core/database';
 import createDebug from 'debug';
 import { retrieveSecret, handleImageResponse } from './retrieve';
 
 const debug = createDebug('bot:list_command');
-const APP_ID = process.env.NILLION_APP_ID || '';
-const API_BASE = 'https://nillion-storage-apis-v0.onrender.com';
 const USER_SEED = Number(process.env.USER_SEED || '');
+const API_BASE = 'https://nillion-storage-apis-v0.onrender.com';
 
 type StoreItem = {
     store_id: string;
@@ -34,14 +33,20 @@ const generateButtons = (data: StoreItem[], page: number, hasNextPage: boolean) 
   return Markup.inlineKeyboard([...itemButtons.map((btn) => [btn]), navigationButtons]);
 };
 
-const fetchPageData = async (page: number, pageSize: number): Promise<{ items: StoreItem[], hasNextPage: boolean }> => {
-  const url = `${API_BASE}/api/apps/${APP_ID}/store_ids?page=${page + 1}&page_size=${pageSize}`;
+const fetchPageData = async (page: number, pageSize: number, userSeed: number): Promise<{ items: StoreItem[], hasNextPage: boolean }> => {
+  const appId = await getUserAppId(userSeed);
+  
+  if (!appId) {
+    throw new Error('Please create an account first using /create');
+  }
+
+  const url = `${API_BASE}/api/apps/${appId}/store_ids?page=${page + 1}&page_size=${pageSize}`;
   const response = await fetch(url);
   const result = await response.json();
 
   return {
     items: result.store_ids || [],
-    hasNextPage: (result.store_ids || []).length === pageSize, // 如果结果数量等于 pageSize，说明可能还有下一页
+    hasNextPage: (result.store_ids || []).length === pageSize,
   };
 };
 
@@ -54,7 +59,7 @@ const list = () => async (ctx: Context) => {
 
     // 1. Fetch API store objects
     const page = 0;
-    const { items, hasNextPage } = await fetchPageData(page, ITEMS_PER_PAGE);
+    const { items, hasNextPage } = await fetchPageData(page, ITEMS_PER_PAGE, USER_SEED);
 
     if (!items || items.length === 0) {
       return ctx.reply('No stored items found.');
@@ -99,7 +104,11 @@ const list = () => async (ctx: Context) => {
     }
   } catch (error) {
     debug('Error listing store IDs:', error);
-    await ctx.reply('An error occurred while listing stored items.');
+    if ((error as Error).message.includes('create an account')) {
+      await ctx.reply('Please create an account first using /create');
+    } else {
+      await ctx.reply('An error occurred while listing stored items.');
+    }
   }
 };
 
@@ -118,7 +127,7 @@ const handleCallbackQuery = () => async (ctx: Context) => {
     const page = parseInt(data.split('_')[1], 10);
 
     try {
-      const { items, hasNextPage } = await fetchPageData(page, ITEMS_PER_PAGE);
+      const { items, hasNextPage } = await fetchPageData(page, ITEMS_PER_PAGE, USER_SEED);
 
       if (!items || items.length === 0) {
         return ctx.reply('No more items found.');

@@ -1,6 +1,6 @@
 import { Context } from 'telegraf';
 import createDebug from 'debug';
-import { getUserStoreIds, saveUserStoreId } from '../core/database';
+import { getUserStoreIds, saveUserStoreId, saveUserAppId } from '../core/database';
 
 const USER_SEED = Number(process.env.USER_SEED || '');
 const debug = createDebug('bot:create_command');
@@ -26,6 +26,10 @@ export const createUserStoreID = () => async (ctx: Context) => {
     }
 
     const result = await response.json();
+    const appId = result.app_id;
+    
+    // Save app_id to database
+    await saveUserAppId(Number(USER_SEED), appId);
     
     // Generate a readable secret name using timestamp
     const secretName = `store_${new Date().toISOString().split('T')[0]}`;
@@ -33,33 +37,20 @@ export const createUserStoreID = () => async (ctx: Context) => {
     // Save to database with proper parameters
     const savedEntry = await saveUserStoreId(
       Number(USER_SEED),
-      result.app_id,
+      appId,
       secretName,
       undefined,
-      'text' // Default content type for new stores
+      'text'
     );
     
-    // Get all user's store IDs
-    const allStoreIds = await getUserStoreIds(Number(USER_SEED));
-    
-    // Format the list with better readability
-    const storeIdsList = allStoreIds
-      .map(entry => {
-        const date = new Date(entry.createdAt).toLocaleString();
-        return `• ${entry.secretName} (ID: ${entry.storeId})\n  Created: ${date}`;
-      })
-      .join('\n');
-    
     await ctx.reply(
-      `✅ New store created successfully!\n\n` +
-      `📋 Store Details:\n` +
-      `Name: ${secretName}\n` +
-      `ID: ${result.app_id}\n\n` +
-      `📚 Your Stores:\n${storeIdsList}`
+      `✅ Account created successfully!\n\n` +
+      `Your account is now ready to store encrypted photos.\n\n` +
+      `Use /store to start storing your photos securely.`
     );
 
   } catch (error) {
     debug('Error creating store ID:', error);
-    await ctx.reply('❌ Error creating store ID: ' + (error as Error).message);
+    await ctx.reply('❌ Error creating account: ' + (error as Error).message);
   }
 };

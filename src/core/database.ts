@@ -116,3 +116,37 @@ export async function removeUserStoreId(userSeed: number, storeId: string) {
   
   debug(`Removed store ID ${storeId} for user ${userSeed}`);
 }
+
+export async function saveUserAppId(userSeed: number, appId: string) {
+  if (ENVIRONMENT === 'production' && kv) {
+    await kv.set(`user:${userSeed}:app_id`, appId);
+  } else {
+    const data = readJson();
+    const existingUser = data.users.find(u => u.userSeed === userSeed);
+    
+    if (existingUser) {
+      existingUser.appIds.push(appId);
+      existingUser.lastUpdated = new Date().toISOString();
+    } else {
+      data.users.push({
+        userSeed,
+        appIds: [appId],
+        storeIds: [],
+        createdAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString()
+      });
+    }
+    writeJson(data);
+  }
+  debug(`Saved app ID ${appId} for user ${userSeed}`);
+}
+
+export async function getUserAppId(userSeed: number): Promise<string | null> {
+  if (ENVIRONMENT === 'production' && kv) {
+    return await kv.get<string>(`user:${userSeed}:app_id`);
+  } else {
+    const data = readJson();
+    const user = data.users.find(u => u.userSeed === userSeed);
+    return user?.appIds[user.appIds.length - 1] || null; // Return the most recent app ID
+  }
+}

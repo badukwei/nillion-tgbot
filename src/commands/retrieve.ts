@@ -1,9 +1,8 @@
 import { Context } from 'telegraf';
 import createDebug from 'debug';
 
-const debug = createDebug('bot:nillion_command');
+const debug = createDebug('bot:nillion_retrieve');
 
-const APP_ID = process.env.NILLION_APP_ID || '';
 const API_BASE = 'https://nillion-storage-apis-v0.onrender.com';
 const USER_SEED = Number(process.env.USER_SEED || '');
 export async function retrieveSecret(storeId: string, secretName: string, userSeed: string) {

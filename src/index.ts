@@ -2,7 +2,7 @@ import { Context, Markup, Telegraf } from 'telegraf';
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { development, production } from './core';
 import axios from 'axios';
-import { help, about, deleteValue, list, retrieveValue, storeValue, handleCallbackQuery, createUserStoreID } from './commands';
+import { help, about, list, retrieveValue, storeValue, handleCallbackQuery, createUserStoreID } from './commands';
 
 import createDebug from 'debug';
 const debug = createDebug('bot:index');
