@@ -29,10 +29,20 @@ type Schema = {
 // Initialize Vercel KV client
 const kv = ENVIRONMENT === 'production' 
   ? createClient({
-      url: process.env.KV_URL!,
+      url: process.env.KV_REST_API_URL!, // Use KV_REST_API_URL instead of KV_URL
       token: process.env.KV_REST_API_TOKEN!,
     })
-  : null
+  : null;
+
+// Add error handling for KV initialization
+if (ENVIRONMENT === 'production' && !kv) {
+  debug('Failed to initialize KV client. Check your environment variables:',
+    {
+      url: process.env.KV_REST_API_URL ? 'Set' : 'Missing',
+      token: process.env.KV_REST_API_TOKEN ? 'Set' : 'Missing'
+    }
+  );
+}
 
 // Simple JSON operations
 const readJson = (): Schema => {
