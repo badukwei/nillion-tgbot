@@ -9,6 +9,9 @@
 /dist
 /public
 
+# db
+db.json
+
 # misc
 .DS_Store
 .env*
