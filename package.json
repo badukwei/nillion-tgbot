@@ -1,9 +1,9 @@
 {
-  "name": "telegram-bot-vercel-boilerplate",
+  "name": "nillion-telegram-bot",
   "version": "1.1.0",
-  "description": "Telegram Bot Vercel Boilerplate",
+  "description": "Private photo sharing bot powered by Nillion's advanced encryption technology.",
   "main": "src/index.ts",
-  "author": "Mark Pavlov (https://github.com/sollidy)",
+  "author": "badukwei and nooma",
   "homepage": "https://github.com/sollidy/telegram-bot-vercel-boilerplate",
   "dependencies": {
     "@nillion/client-react-hooks": "^0.1.0",
