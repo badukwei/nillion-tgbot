@@ -59,15 +59,8 @@ const list = () => async (ctx: Context) => {
     }
 
     // Display store objects with pagination
-    const buttons = generateButtons(
-      items.map(item => ({ 
-        store_id: item.store_id, 
-        secret_name: `Store: ${item.store_id}`
-      })),
-      page,
-      hasNextPage
-    );
-    await ctx.reply('📋 Check your images: ', buttons);
+    const buttons = generateButtons(items, page, hasNextPage);
+    await ctx.reply('📋 Store IDs:', buttons);
 
     // 2. Separately handle local thumbnails
     const userStoreEntries = await getUserStoreIds(Number(userSeed));
