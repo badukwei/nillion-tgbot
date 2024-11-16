@@ -8,7 +8,7 @@ const debug = createDebug('bot:dev');
 const PORT = (process.env.PORT && parseInt(process.env.PORT, 10)) || 3000;
 const VERCEL_URL = `${process.env.VERCEL_URL}`;
 
-const production = async (
+export const production = async (
   req: VercelRequest,
   res: VercelResponse,
   bot: Telegraf<Context<Update>>,
