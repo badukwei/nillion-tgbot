@@ -7,15 +7,19 @@ const ENVIRONMENT = process.env.NODE_ENV || ''
 const DB_PATH = 'db.json'
 
 type StoreEntry = {
-    storeId: string
-    createdAt: string
-    thumbnail?: string
-    contentType?: 'image' | 'text'
-  }
+  storeId: string
+  secretName: string
+  createdAt: string
+  thumbnail?: string
+  contentType?: 'image' | 'text'
+}
 
 type User = {
   telegramId: number
+  appIds: string[] // Changed to string array
   storeIds: StoreEntry[]
+  createdAt: string // Added creation timestamp
+  lastUpdated: string // Added last updated timestamp
 }
 
 type Schema = {
@@ -46,11 +50,13 @@ const writeJson = (data: Schema) => {
 export async function saveUserStoreId(
     telegramId: number, 
     storeId: string, 
+    secretName: string,
     thumbnail?: string,
     contentType?: 'image' | 'text'
   ) {
     const newEntry: StoreEntry = {
       storeId,
+      secretName,
       createdAt: new Date().toISOString(),
       thumbnail,
       contentType
@@ -69,7 +75,10 @@ export async function saveUserStoreId(
       } else {
         data.users.push({
           telegramId,
-          storeIds: [newEntry]
+          appIds: [], // Initialize with empty array
+          storeIds: [newEntry],
+          createdAt: new Date().toISOString(),
+          lastUpdated: new Date().toISOString()
         })
       }
       writeJson(data)
@@ -87,4 +96,23 @@ export async function getUserStoreIds(telegramId: number) {
     const user = data.users.find(u => u.telegramId === telegramId)
     return user?.storeIds || []
   }
+}
+
+export async function removeUserStoreId(telegramId: number, storeId: string) {
+  if (ENVIRONMENT === 'production' && kv) {
+    const existingIds = await kv.get<StoreEntry[]>(`user:${telegramId}`) || [];
+    const updatedIds = existingIds.filter(entry => entry.storeId !== storeId);
+    await kv.set(`user:${telegramId}`, updatedIds);
+  } else {
+    const data = readJson();
+    const user = data.users.find(u => u.telegramId === telegramId);
+    
+    if (user) {
+      user.storeIds = user.storeIds.filter(entry => entry.storeId !== storeId);
+      user.lastUpdated = new Date().toISOString();
+      writeJson(data);
+    }
+  }
+  
+  debug(`Removed store ID ${storeId} for user ${telegramId}`);
 }

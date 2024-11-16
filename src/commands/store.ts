@@ -35,7 +35,13 @@ export const storeValue = async (userSeed: string, base64Image: string, secretNa
         const result = await response.json();
         
         // Save to local database with thumbnail
-        await saveUserStoreId(Number(userSeed), result.store_id, thumbnail, 'image');
+        await saveUserStoreId(
+            Number(userSeed), 
+            result.store_id, 
+            secretName,  // This should be the actual secret name
+            base64Image, // This should be the thumbnail
+            'image'
+          );
         
         return result.store_id;
     } catch (error) {
