@@ -15,7 +15,7 @@ type StoreEntry = {
 }
 
 type User = {
-  telegramId: number
+  userSeed: number
   appIds: string[] // Changed to string array
   storeIds: StoreEntry[]
   createdAt: string // Added creation timestamp
@@ -48,7 +48,7 @@ const writeJson = (data: Schema) => {
 }
 
 export async function saveUserStoreId(
-    telegramId: number, 
+    userSeed: number, 
     storeId: string, 
     secretName: string,
     thumbnail?: string,
@@ -63,18 +63,18 @@ export async function saveUserStoreId(
     }
   
     if (ENVIRONMENT === 'production' && kv) {
-      const existingIds = await kv.get<StoreEntry[]>(`user:${telegramId}`) || []
+      const existingIds = await kv.get<StoreEntry[]>(`user:${userSeed}`) || []
       existingIds.push(newEntry)
-      await kv.set(`user:${telegramId}`, existingIds)
+      await kv.set(`user:${userSeed}`, existingIds)
     } else {
       const data = readJson()
-      const existingUser = data.users.find(u => u.telegramId === telegramId)
+      const existingUser = data.users.find(u => u.userSeed === userSeed)
       
       if (existingUser) {
         existingUser.storeIds.push(newEntry)
       } else {
         data.users.push({
-          telegramId,
+          userSeed,
           appIds: [], // Initialize with empty array
           storeIds: [newEntry],
           createdAt: new Date().toISOString(),
@@ -84,28 +84,29 @@ export async function saveUserStoreId(
       writeJson(data)
     }
     
-    debug(`Saved store ID ${storeId} for user ${telegramId}`)
+    debug(`Saved store ID ${storeId} for user ${userSeed}`)
     return newEntry
   }
 
-export async function getUserStoreIds(telegramId: number) {
+export async function getUserStoreIds(userSeed: number) {
   if (ENVIRONMENT === 'production' && kv) {
-    return await kv.get<StoreEntry[]>(`user:${telegramId}`) || []
+    return await kv.get<StoreEntry[]>(`user:${userSeed}`) || []
   } else {
     const data = readJson()
-    const user = data.users.find(u => u.telegramId === telegramId)
+    const user = data.users.find(u => u.userSeed === userSeed)
+    console.log('User:', user);
     return user?.storeIds || []
   }
 }
 
-export async function removeUserStoreId(telegramId: number, storeId: string) {
+export async function removeUserStoreId(userSeed: number, storeId: string) {
   if (ENVIRONMENT === 'production' && kv) {
-    const existingIds = await kv.get<StoreEntry[]>(`user:${telegramId}`) || [];
+    const existingIds = await kv.get<StoreEntry[]>(`user:${userSeed}`) || [];
     const updatedIds = existingIds.filter(entry => entry.storeId !== storeId);
-    await kv.set(`user:${telegramId}`, updatedIds);
+    await kv.set(`user:${userSeed}`, updatedIds);
   } else {
     const data = readJson();
-    const user = data.users.find(u => u.telegramId === telegramId);
+    const user = data.users.find(u => u.userSeed === userSeed);
     
     if (user) {
       user.storeIds = user.storeIds.filter(entry => entry.storeId !== storeId);
@@ -114,5 +115,5 @@ export async function removeUserStoreId(telegramId: number, storeId: string) {
     }
   }
   
-  debug(`Removed store ID ${storeId} for user ${telegramId}`);
+  debug(`Removed store ID ${storeId} for user ${userSeed}`);
 }

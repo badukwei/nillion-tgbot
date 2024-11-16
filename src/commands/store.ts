@@ -38,8 +38,8 @@ export const storeValue = async (userSeed: string, base64Image: string, secretNa
         await saveUserStoreId(
             Number(userSeed), 
             result.store_id, 
-            secretName,  // This should be the actual secret name
-            base64Image, // This should be the thumbnail
+            secretName,
+            thumbnail, 
             'image'
           );
         

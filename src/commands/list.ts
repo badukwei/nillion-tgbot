@@ -6,7 +6,7 @@ import { retrieveSecret, handleImageResponse } from './retrieve';
 const debug = createDebug('bot:list_command');
 const APP_ID = process.env.NILLION_APP_ID || '';
 const API_BASE = 'https://nillion-storage-apis-v0.onrender.com';
-const USER_SEED = process.env.USER_SEED || '';
+const USER_SEED = Number(process.env.USER_SEED || '');
 
 type StoreItem = {
     store_id: string;
@@ -67,7 +67,7 @@ const list = () => async (ctx: Context) => {
     // 2. Separately handle local thumbnails
     const userStoreEntries = await getUserStoreIds(Number(USER_SEED));
     const images = userStoreEntries.filter(entry => entry.contentType === 'image');
-
+    console.log('Images:', images);
     if (images.length > 0) {
       await ctx.reply('🖼️ Your stored image thumbnails:');
 
@@ -145,7 +145,7 @@ const handleCallbackQuery = () => async (ctx: Context) => {
         return;
       }
   
-      const secret = await retrieveSecret(storeId, selectedEntry.secretName, USER_SEED);
+      const secret = await retrieveSecret(storeId, selectedEntry.secretName, USER_SEED.toString());
   
       if (selectedEntry.contentType === 'image') {
         await handleImageResponse(ctx, secret, selectedEntry.secretName);

@@ -3,7 +3,7 @@ import createDebug from 'debug';
 import { getUserStoreIds, removeUserStoreId } from '../core/database';
 
 const debug = createDebug('bot:nillion_command');
-const USER_SEED = process.env.USER_SEED || '';
+const USER_SEED = Number(process.env.USER_SEED || '');
 const API_BASE = 'https://nillion-storage-apis-v0.onrender.com';
 
 export const deleteValue = () => async (ctx: Context) => {

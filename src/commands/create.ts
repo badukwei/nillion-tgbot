@@ -2,15 +2,14 @@ import { Context } from 'telegraf';
 import createDebug from 'debug';
 import { getUserStoreIds, saveUserStoreId } from '../core/database';
 
+const USER_SEED = Number(process.env.USER_SEED || '');
 const debug = createDebug('bot:create_command');
 
 export const createUserStoreID = () => async (ctx: Context) => {
   try {
     debug('Creating new user store ID');
     
-    const telegramId = ctx.from?.id;
-    
-    if (!telegramId) {
+    if (!USER_SEED) {
       await ctx.reply('Could not identify user');
       return;
     }
@@ -33,7 +32,7 @@ export const createUserStoreID = () => async (ctx: Context) => {
     
     // Save to database with proper parameters
     const savedEntry = await saveUserStoreId(
-      telegramId,
+      Number(USER_SEED),
       result.app_id,
       secretName,
       undefined,
@@ -41,7 +40,7 @@ export const createUserStoreID = () => async (ctx: Context) => {
     );
     
     // Get all user's store IDs
-    const allStoreIds = await getUserStoreIds(telegramId);
+    const allStoreIds = await getUserStoreIds(Number(USER_SEED));
     
     // Format the list with better readability
     const storeIdsList = allStoreIds

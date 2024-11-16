@@ -9,7 +9,7 @@ const debug = createDebug('bot:index');
 
 const BOT_TOKEN = process.env.BOT_TOKEN || '';
 const ENVIRONMENT = process.env.NODE_ENV || '';
-
+const USER_SEED = Number(process.env.USER_SEED || '');
 const bot = new Telegraf(BOT_TOKEN);
 
 export const userStoreStates: Record<string, { action?: string; imageName?: string }> = {};
@@ -25,7 +25,7 @@ bot.telegram.setMyCommands([
 
 // bot.command('create', createUserStoreID());
 bot.command('store', async (ctx) => {
-  const userId = ctx.from?.id.toString();
+  const userId = USER_SEED;
   if (!userId) return;
 
   userStoreStates[userId] = { action: 'awaiting_image' };
@@ -39,7 +39,7 @@ bot.command('about', about());
 bot.command('help', help());
 
 bot.on('photo', async (ctx) => {
-  const userId = ctx.from?.id.toString();
+  const userId = USER_SEED;
   if (!userId || userStoreStates[userId]?.action !== 'awaiting_image') {
     delete userStoreStates[userId];
     await ctx.reply('Please use /store first to start the storing process.');
@@ -66,7 +66,7 @@ bot.on('photo', async (ctx) => {
 });
 
 bot.on('text', async (ctx) => {
-  const userId = ctx.from?.id.toString();
+  const userId = USER_SEED;
   if (!userId || userStoreStates[userId]?.action !== 'awaiting_name') {
     delete userStoreStates[userId];
     await ctx.reply('Please start the store process by using the /store command first.');
@@ -81,8 +81,8 @@ bot.on('text', async (ctx) => {
   }
 
   try {
-    const storeId = await storeValue(userId, base64Image, imageName);
-    delete userStoreStates[userId];
+    const storeId = await storeValue(userId.toString(), base64Image, imageName);
+    delete userStoreStates[userId]; 
 
     await ctx.reply(`Image stored successfully!\nStore ID: ${storeId}`);
   } catch (error) {

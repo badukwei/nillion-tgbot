@@ -5,7 +5,7 @@ const debug = createDebug('bot:nillion_command');
 
 const APP_ID = process.env.NILLION_APP_ID || '';
 const API_BASE = 'https://nillion-storage-apis-v0.onrender.com';
-const USER_SEED = process.env.USER_SEED || '';
+const USER_SEED = Number(process.env.USER_SEED || '');
 export async function retrieveSecret(storeId: string, secretName: string, userSeed: string) {
   console.log('Retrieving secret:', storeId, secretName, userSeed);
   const response = await fetch(
@@ -54,7 +54,7 @@ export const retrieveValue = () => async (ctx: Context) => {
       return;
     }
 
-    const secret = await retrieveSecret(storeId, secretName, USER_SEED);
+    const secret = await retrieveSecret(storeId, secretName, USER_SEED.toString());
 
     if (secret.startsWith('/9j/') || secret.startsWith('iVBOR')) {
       await handleImageResponse(ctx, secret, secretName);
