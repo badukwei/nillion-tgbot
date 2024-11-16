@@ -10,10 +10,12 @@ export const createUserStoreID = () => async (ctx: Context) => {
     
     const userId = ctx.message?.from.id;
     if (!userId) {
+      debug('User ID not found in message');
       await ctx.reply('Could not identify user');
       return;
     }
 
+    debug(`Making API request for user ${userId}`);
     const response = await fetch('https://nillion-storage-apis-v0.onrender.com/api/apps/register', {
       method: 'POST',
       headers: {
@@ -22,27 +24,23 @@ export const createUserStoreID = () => async (ctx: Context) => {
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      debug(`API error: ${response.status}, ${errorText}`);
       throw new Error(`API error: ${response.status}`);
     }
 
     const result = await response.json();
-    const appId = result.app_id;
+    debug(`Received app_id: ${result.app_id}`);
     
-    // Save app_id to database
-    await saveUserAppId(userId, appId);
-    
-    // Generate a readable secret name using timestamp
-    const secretName = `store_${new Date().toISOString().split('T')[0]}`;
-    
-    // Save to database with proper parameters
-    await saveUserStoreId(
-      userId,
-      appId,
-      secretName,
-      undefined,
-      'text'
-    );
-    
+    // Save app_id to database with error handling
+    try {
+      await saveUserAppId(userId, result.app_id);
+      debug(`Successfully saved app_id for user ${userId}`);
+    } catch (dbError) {
+      debug('Database error:', dbError);
+      throw new Error('Failed to save user data');
+    }
+
     await ctx.reply(
       `✅ Account created successfully!\n\n` +
       `Your account is now ready to store encrypted photos.\n\n` +
