@@ -7,8 +7,9 @@ const APP_ID = process.env.NILLION_APP_ID || '';
 const API_BASE = 'https://nillion-storage-apis-v0.onrender.com';
 
 type StoreItem = {
-  store_id: string;
-  secret_name: string;
+    store_id: string;
+    secret_name: string;
+    content_type?: 'image' | 'text';
 };
 
 const ITEMS_PER_PAGE = 5;
@@ -132,11 +133,52 @@ const handleCallbackQuery = () => async (ctx: Context) => {
     }
   }
 
-  // Handle store selection
-  if (data.startsWith('store_')) {
-    const storeId = data.split('_')[1];
-    await ctx.reply(`You selected store ID: ${storeId}`);
-  }
+    // Handle store selection
+    if (data.startsWith('store_')) {
+        const storeId = data.split('_')[1];
+        
+        try {
+            // Get the store entry to determine if it's an image or text
+            const userStoreEntries = await getUserStoreIds(Number(userSeed));
+            const selectedEntry = userStoreEntries.find(entry => entry.storeId === storeId);
+            
+            if (!selectedEntry) {
+                await ctx.reply('Store ID not found');
+                return;
+            }
+
+            // Extract the actual secret name from the button text
+            const secretName = selectedEntry.secretName; // Fallback to storeId if no secretName
+
+            const response = await fetch(
+                `${API_BASE}/api/secret/retrieve/${storeId}?retrieve_as_nillion_user_seed=${userSeed}&secret_name=${secretName}`
+            );
+            const result = await response.json();
+
+            if (!result.secret) {
+                await ctx.reply('Error: No data found for this store ID');
+                return;
+            }
+
+            // Check if it's an image or text based on the content type
+            if (selectedEntry.contentType === 'image') {
+                const imageBuffer = Buffer.from(result.secret, 'base64');
+                await ctx.replyWithPhoto(
+                    { source: imageBuffer },
+                    { caption: `Retrieved image: ${secretName}` }
+                );
+            } else {
+                await ctx.reply(`Retrieved text: ${result.secret}`);
+            }
+
+            // Answer the callback query to remove loading state
+            await ctx.answerCbQuery();
+        } catch (error) {
+            debug('Error retrieving value:', error);
+            await ctx.reply('Error retrieving value: ' + (error as Error).message);
+            await ctx.answerCbQuery();
+        }
+    }
 };
 
 export { list, handleCallbackQuery };
