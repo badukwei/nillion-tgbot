@@ -1,61 +1,90 @@
-// import { Low } from 'lowdb'
-// import { JSONFile } from 'lowdb/node'
-// import createDebug from 'debug';
+import { createClient } from '@vercel/kv'
+import { readFileSync, writeFileSync } from 'fs'
+import createDebug from 'debug'
 
-// const debug = createDebug('bot:database');
+const debug = createDebug('bot:database')
+const ENVIRONMENT = process.env.NODE_ENV || ''
+const DB_PATH = 'db.json'
 
-// // Define types for our database structure
-// type StoreEntry = {
-//     storeId: string
-//     createdAt: string
-// }
+type StoreEntry = {
+    storeId: string
+    createdAt: string
+    thumbnail?: string
+    contentType?: 'image' | 'text'
+  }
 
-// type User = {
-//     telegramId: number
-//     storeIds: StoreEntry[]
-// }
+type User = {
+  telegramId: number
+  storeIds: StoreEntry[]
+}
 
-// type Schema = {
-//     users: User[]
-// }
+type Schema = {
+  users: User[]
+}
 
-// // Create default data
-// const defaultData: Schema = {
-//     users: []
-// }
+// Initialize Vercel KV client
+const kv = ENVIRONMENT === 'production' 
+  ? createClient({
+      url: process.env.KV_REST_API_URL!,
+      token: process.env.KV_REST_API_TOKEN!,
+    })
+  : null
 
-// // Initialize database
-// const adapter = new JSONFile<Schema>('db.json')
-// const db = new Low<Schema>(adapter, defaultData)
+// Simple JSON operations
+const readJson = (): Schema => {
+  try {
+    return JSON.parse(readFileSync(DB_PATH, 'utf-8'))
+  } catch {
+    return { users: [] }
+  }
+}
 
-// export async function saveUserStoreId(telegramId: number, storeId: string) {
-//     await db.read()
+const writeJson = (data: Schema) => {
+  writeFileSync(DB_PATH, JSON.stringify(data, null, 2))
+}
 
-//     const newEntry: StoreEntry = {
-//         storeId,
-//         createdAt: new Date().toISOString()
-//     }
+export async function saveUserStoreId(
+    telegramId: number, 
+    storeId: string, 
+    thumbnail?: string,
+    contentType?: 'image' | 'text'
+  ) {
+    const newEntry: StoreEntry = {
+      storeId,
+      createdAt: new Date().toISOString(),
+      thumbnail,
+      contentType
+    }
+  
+    if (ENVIRONMENT === 'production' && kv) {
+      const existingIds = await kv.get<StoreEntry[]>(`user:${telegramId}`) || []
+      existingIds.push(newEntry)
+      await kv.set(`user:${telegramId}`, existingIds)
+    } else {
+      const data = readJson()
+      const existingUser = data.users.find(u => u.telegramId === telegramId)
+      
+      if (existingUser) {
+        existingUser.storeIds.push(newEntry)
+      } else {
+        data.users.push({
+          telegramId,
+          storeIds: [newEntry]
+        })
+      }
+      writeJson(data)
+    }
+    
+    debug(`Saved store ID ${storeId} for user ${telegramId}`)
+    return newEntry
+  }
 
-//     const existingUser = db.data.users.find(u => u.telegramId === telegramId)
-
-//     if (existingUser) {
-//         // Add new store ID to existing user's array
-//         existingUser.storeIds.push(newEntry)
-//     } else {
-//         // Create new user with their first store ID
-//         db.data.users.push({
-//             telegramId,
-//             storeIds: [newEntry]
-//         })
-//     }
-
-//     await db.write()
-//     debug(`Saved store ID ${storeId} for user ${telegramId}`)
-//     return newEntry
-// }
-
-// export async function getUserStoreIds(telegramId: number) {
-//     await db.read()
-//     const user = db.data.users.find(u => u.telegramId === telegramId)
-//     return user?.storeIds || []
-// }
+export async function getUserStoreIds(telegramId: number) {
+  if (ENVIRONMENT === 'production' && kv) {
+    return await kv.get<StoreEntry[]>(`user:${telegramId}`) || []
+  } else {
+    const data = readJson()
+    const user = data.users.find(u => u.telegramId === telegramId)
+    return user?.storeIds || []
+  }
+}

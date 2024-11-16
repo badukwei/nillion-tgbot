@@ -1,11 +1,11 @@
 import { Context, Markup, Telegraf } from 'telegraf';
-import { start } from './commands/start';
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { development, production } from './core';
 import axios from 'axios';
-import * as fs from 'fs';
-import { help, about, deleteImg, list, retrieveValue, storeValue, handleCallbackQuery } from './commands';
-// import { createUserStoreID } from './commands/create';
+import { help, about, deleteValue, list, retrieveValue, storeValue, handleCallbackQuery, createUserStoreID } from './commands';
+
+import createDebug from 'debug';
+const debug = createDebug('bot:index');
 
 const BOT_TOKEN = process.env.BOT_TOKEN || '';
 const ENVIRONMENT = process.env.NODE_ENV || '';
@@ -36,7 +36,8 @@ bot.command('store', async (ctx) => {
 });
 bot.command('list', list());
 bot.on('callback_query', handleCallbackQuery());
-bot.command('delete', deleteImg());
+bot.command('delete', deleteValue());
+bot.command('create', createUserStoreID())
 bot.command('retrieve', retrieveValue());
 bot.command('about', about());
 bot.command('help', help());
@@ -44,28 +45,26 @@ bot.command('help', help());
 bot.on('photo', async (ctx) => {
   const userId = ctx.from?.id.toString();
   if (!userId || userStoreStates[userId]?.action !== 'awaiting_image') {
-    return ctx.reply('Please use /store first to start the storing process.');
+      return ctx.reply('Please use /store first to start the storing process.');
   }
 
   try {
-    const photos = ctx.message.photo;
-    const highestResPhoto = photos[photos.length - 1];
-    const fileId = highestResPhoto.file_id;
-    const fileUrl = await ctx.telegram.getFileLink(fileId);
+      const photos = ctx.message.photo;
+      const highestResPhoto = photos[photos.length - 1];
+      const fileId = highestResPhoto.file_id;
+      const fileUrl = await ctx.telegram.getFileLink(fileId);
+      const caption = ctx.message.caption || 'unnamed_image';
 
-    const response = await axios.get(fileUrl.href, { responseType: 'arraybuffer' });
-    const buffer = Buffer.from(response.data, 'binary');
+      const response = await axios.get(fileUrl.href, { responseType: 'arraybuffer' });
+      const buffer = Buffer.from(response.data, 'binary');
+      const base64Image = buffer.toString('base64');
 
-    fs.writeFileSync('downloaded_image.jpg', buffer);
-
-    const base64Image = buffer.toString('base64');
-    console.log(base64Image.length);
-
-    userStoreStates[userId].action = 'awaiting_name';
-    userStoreStates[userId].imageName = buffer.toString('base64');
-    await ctx.reply('Image received! Now, please send a name for the image.');
+      userStoreStates[userId].action = 'awaiting_name';
+      userStoreStates[userId].imageName = base64Image;
+      await ctx.reply('Image received! Now, please send a name for the image.');
   } catch (error) {
-    await ctx.reply('An error occurred while processing the image.');
+      debug('Error processing image:', error);
+      await ctx.reply('An error occurred while processing the image.');
   }
 });
 
