@@ -7,16 +7,20 @@ const debug = createDebug('bot:about_command');
 
 const about = () => async (ctx: Context) => {
   try {
-    const message = `*${name} ${version}*\\n\\n` +
+    const escapedName = name.replace(/-/g, '\\-');
+
+    const message = `*${escapedName} ${version}*\\n\\n` +
       `A secure photo sharing bot powered by Nillion's advanced encryption technology\\. ` +
       `This bot allows users to send photos securely with end\\-to\\-end encryption\\.\n\n` +
       `🔒 *Features*:\\n` +
-      `\\- Secure photo transmission\\n` +
-      `\\- End\\-to\\-end encryption\\n` +
-      `\\- Privacy\\-first design\\n\\n` +
+      `• Secure photo transmission\\n` + // Changed - to •
+      `• End\\-to\\-end encryption\\n` + // Changed - to •
+      `• Privacy\\-first design\\n\\n` + // Changed - to •
       `Type /help to learn how to use this bot\\.\\n\\n` +
       `Created by: ${author}`;
 
+
+    console.log('About command triggered:', message); // Add this line
     debug(`Triggered "about" command with message: ${message}`);
     
     await ctx.replyWithMarkdownV2(message);
