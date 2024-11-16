@@ -26,19 +26,25 @@ export const production = async (
     const webhookUrl = `https://${process.env.VERCEL_URL}/api`;
     debug(`Setting webhook: ${webhookUrl}`);
 
-    // Initialize bot commands first
-    try {
-      await bot.telegram.setMyCommands([
-        { command: 'about', description: 'About this bot' },
-        { command: 'create', description: 'Create your storage' },
-        { command: 'store', description: 'Store an image' },
-        { command: 'list', description: 'Get all stored images' },
-        { command: 'retrieve', description: 'Retrieve an image' },
-        { command: 'help', description: 'How to use this bot' }
-      ]);
-    } catch (cmdError) {
-      debug('Error setting commands:', cmdError);
-      // Continue even if setting commands fails
+    // Initialize bot commands with retry logic
+    for (let i = 0; i < 3; i++) { // Try up to 3 times
+      try {
+        await bot.telegram.setMyCommands([
+          { command: 'about', description: 'About this bot' },
+          { command: 'create', description: 'Create your storage' },
+          { command: 'store', description: 'Store an image' },
+          { command: 'list', description: 'Get all stored images' },
+          { command: 'retrieve', description: 'Retrieve an image' },
+          { command: 'help', description: 'How to use this bot' }
+        ]);
+        break; // If successful, break the retry loop
+      } catch (cmdError) {
+        debug(`Attempt ${i + 1} failed to set commands:`, cmdError);
+        if (i === 2) { // Log but don't throw on final attempt
+          debug('Failed to set commands after all retries');
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1s before retry
+      }
     }
 
     // Set webhook
