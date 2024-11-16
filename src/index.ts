@@ -106,9 +106,21 @@ bot.on('text', async (ctx) => {
   }
 });
 
-
 export const startVercel = async (req: VercelRequest, res: VercelResponse) => {
   await production(req, res, bot);
 };
+
+// Remove lines 109-111 (startVercel export)
+// Keep only the default handler (lines 113-122)
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  try {
+    await production(req, res, bot);
+  } catch (e: any) {
+    res.statusCode = 500;
+    res.setHeader('Content-Type', 'text/html');
+    res.end('<h1>Server Error</h1><p>Sorry, there was a problem</p>');
+    console.error(e.message);
+  }
+}
 
 ENVIRONMENT !== 'production' && development(bot);
