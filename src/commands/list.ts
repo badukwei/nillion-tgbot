@@ -1,6 +1,7 @@
 import { Context, Markup } from "telegraf";
 import { getUserStoreIds } from '../core/database';
 import createDebug from 'debug';
+import { retrieveSecret, handleImageResponse } from './retrieve';
 
 const debug = createDebug('bot:list_command');
 const APP_ID = process.env.NILLION_APP_ID || '';
@@ -78,7 +79,7 @@ const list = () => async (ctx: Context) => {
           mediaGroup.push({
             type: 'photo' as const,
             media: { source: imageBuffer },
-            caption: `ID: ${img.storeId}`
+            caption: `ID: ${img.secretName}`
           });
         }
       }
@@ -133,52 +134,33 @@ const handleCallbackQuery = () => async (ctx: Context) => {
     }
   }
 
-    // Handle store selection
-    if (data.startsWith('store_')) {
-        const storeId = data.split('_')[1];
-        
-        try {
-            // Get the store entry to determine if it's an image or text
-            const userStoreEntries = await getUserStoreIds(Number(userSeed));
-            const selectedEntry = userStoreEntries.find(entry => entry.storeId === storeId);
-            
-            if (!selectedEntry) {
-                await ctx.reply('Store ID not found');
-                return;
-            }
-
-            // Extract the actual secret name from the button text
-            const secretName = selectedEntry.secretName; // Fallback to storeId if no secretName
-
-            const response = await fetch(
-                `${API_BASE}/api/secret/retrieve/${storeId}?retrieve_as_nillion_user_seed=${userSeed}&secret_name=${secretName}`
-            );
-            const result = await response.json();
-
-            if (!result.secret) {
-                await ctx.reply('Error: No data found for this store ID');
-                return;
-            }
-
-            // Check if it's an image or text based on the content type
-            if (selectedEntry.contentType === 'image') {
-                const imageBuffer = Buffer.from(result.secret, 'base64');
-                await ctx.replyWithPhoto(
-                    { source: imageBuffer },
-                    { caption: `Retrieved image: ${secretName}` }
-                );
-            } else {
-                await ctx.reply(`Retrieved text: ${result.secret}`);
-            }
-
-            // Answer the callback query to remove loading state
-            await ctx.answerCbQuery();
-        } catch (error) {
-            debug('Error retrieving value:', error);
-            await ctx.reply('Error retrieving value: ' + (error as Error).message);
-            await ctx.answerCbQuery();
-        }
+  if (data.startsWith('store_')) {
+    const storeId = data.split('_')[1];
+    
+    try {
+      const userStoreEntries = await getUserStoreIds(Number(userSeed));
+      const selectedEntry = userStoreEntries.find(entry => entry.storeId === storeId);
+      
+      if (!selectedEntry) {
+        await ctx.reply('Store ID not found');
+        return;
+      }
+  
+      const secret = await retrieveSecret(storeId, selectedEntry.secretName, userSeed);
+  
+      if (selectedEntry.contentType === 'image') {
+        await handleImageResponse(ctx, secret, selectedEntry.secretName);
+      } else {
+        await ctx.reply(`Retrieved text: ${secret}`);
+      }
+  
+      await ctx.answerCbQuery();
+    } catch (error) {
+      debug('Error retrieving value:', error);
+      await ctx.reply('Error: ' + (error as Error).message);
+      await ctx.answerCbQuery();
     }
+  }
 };
 
 export { list, handleCallbackQuery };
