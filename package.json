@@ -32,7 +32,7 @@
   "scripts": {
     "dev": "DEBUG=bot* dotenv -- nodemon -e ts -x ts-node src/index.ts",
     "devWindows": "@powershell -Command $env:DEBUG='bot*';dotenv -- nodemon -e ts -x ts-node src/index.ts",
-    "build": "ncc build api/index.ts -o public -m",
+    "build": "ncc build index.ts -o public -m",
     "vercel-build": "npm run build",
     "prettier": "prettier --write 'src/**/*.ts'",
     "lint": "tsc --noemit"
