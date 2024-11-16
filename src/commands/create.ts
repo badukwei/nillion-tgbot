@@ -1,15 +1,15 @@
 import { Context } from 'telegraf';
 import createDebug from 'debug';
-import { getUserStoreIds, saveUserStoreId, saveUserAppId } from '../core/database';
+import { saveUserStoreId, saveUserAppId } from '../core/database';
 
-const USER_SEED = Number(process.env.USER_SEED || '');
 const debug = createDebug('bot:create_command');
 
 export const createUserStoreID = () => async (ctx: Context) => {
   try {
     debug('Creating new user store ID');
     
-    if (!USER_SEED) {
+    const userId = ctx.message?.from.id;
+    if (!userId) {
       await ctx.reply('Could not identify user');
       return;
     }
@@ -29,14 +29,14 @@ export const createUserStoreID = () => async (ctx: Context) => {
     const appId = result.app_id;
     
     // Save app_id to database
-    await saveUserAppId(Number(USER_SEED), appId);
+    await saveUserAppId(userId, appId);
     
     // Generate a readable secret name using timestamp
     const secretName = `store_${new Date().toISOString().split('T')[0]}`;
     
     // Save to database with proper parameters
-    const savedEntry = await saveUserStoreId(
-      Number(USER_SEED),
+    await saveUserStoreId(
+      userId,
       appId,
       secretName,
       undefined,

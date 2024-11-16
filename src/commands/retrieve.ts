@@ -4,7 +4,7 @@ import createDebug from 'debug';
 const debug = createDebug('bot:nillion_retrieve');
 
 const API_BASE = 'https://nillion-storage-apis-v0.onrender.com';
-const USER_SEED = Number(process.env.USER_SEED || '');
+
 export async function retrieveSecret(storeId: string, secretName: string, userSeed: string) {
   console.log('Retrieving secret:', storeId, secretName, userSeed);
   const response = await fetch(
@@ -39,6 +39,12 @@ export const retrieveValue = () => async (ctx: Context) => {
       return;
     }
 
+    const userId = ctx.message.from.id;
+    if (!userId) {
+      await ctx.reply('Could not identify user');
+      return;
+    }
+
     const messageText = ctx.message?.text?.split(' ');
     if (!messageText || messageText.length < 3) {
       await ctx.reply('Usage: /retrieve <store_id> <secret_name>');
@@ -48,12 +54,7 @@ export const retrieveValue = () => async (ctx: Context) => {
     const storeId = messageText[1];
     const secretName = messageText[2];
 
-    if (!USER_SEED) {
-      await ctx.reply('User seed not found');
-      return;
-    }
-
-    const secret = await retrieveSecret(storeId, secretName, USER_SEED.toString());
+    const secret = await retrieveSecret(storeId, secretName, userId.toString());
 
     if (secret.startsWith('/9j/') || secret.startsWith('iVBOR')) {
       await handleImageResponse(ctx, secret, secretName);

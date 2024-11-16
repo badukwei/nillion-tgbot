@@ -4,7 +4,6 @@ import createDebug from 'debug';
 import { retrieveSecret, handleImageResponse } from './retrieve';
 
 const debug = createDebug('bot:list_command');
-const USER_SEED = Number(process.env.USER_SEED || '');
 const API_BASE = 'https://nillion-storage-apis-v0.onrender.com';
 
 type StoreItem = {
@@ -52,14 +51,15 @@ const fetchPageData = async (page: number, pageSize: number, userSeed: number): 
 
 const list = () => async (ctx: Context) => {
   try {
-    if (!USER_SEED) {
+    const userId = ctx.message?.from.id;
+    if (!userId) {
       await ctx.reply('Could not identify user');
       return;
     }
 
     // 1. Fetch API store objects
     const page = 0;
-    const { items, hasNextPage } = await fetchPageData(page, ITEMS_PER_PAGE, USER_SEED);
+    const { items, hasNextPage } = await fetchPageData(page, ITEMS_PER_PAGE, userId);
 
     if (!items || items.length === 0) {
       return ctx.reply('No stored items found.');
@@ -70,7 +70,7 @@ const list = () => async (ctx: Context) => {
     await ctx.reply('📋 Here are your images:', buttons);
 
     // 2. Separately handle local thumbnails
-    const userStoreEntries = await getUserStoreIds(Number(USER_SEED));
+    const userStoreEntries = await getUserStoreIds(userId);
     const images = userStoreEntries.filter(entry => entry.contentType === 'image');
     if (images.length > 0) {
       await ctx.reply('🖼️ Your stored image thumbnails:');
@@ -83,7 +83,7 @@ const list = () => async (ctx: Context) => {
           mediaGroup.push({
             type: 'photo' as const,
             media: { source: imageBuffer },
-            caption: `ID: ${img.secretName}`
+            caption: `Name: ${img.secretName}`
           });
         }
       }
@@ -119,15 +119,17 @@ function isDataCallbackQuery(query: any): query is { data: string } {
 const handleCallbackQuery = () => async (ctx: Context) => {
   if (!ctx.callbackQuery || !isDataCallbackQuery(ctx.callbackQuery)) return;
 
+  const userId = ctx.callbackQuery.from.id;
+  if (!userId) return;
+
   const data = ctx.callbackQuery.data;
-  if (!USER_SEED) return;
 
   // Handle page navigation
   if (data.startsWith('page_')) {
     const page = parseInt(data.split('_')[1], 10);
 
     try {
-      const { items, hasNextPage } = await fetchPageData(page, ITEMS_PER_PAGE, USER_SEED);
+      const { items, hasNextPage } = await fetchPageData(page, ITEMS_PER_PAGE, userId);
 
       if (!items || items.length === 0) {
         return ctx.reply('No more items found.');
@@ -145,7 +147,7 @@ const handleCallbackQuery = () => async (ctx: Context) => {
     const storeId = data.split('_')[1];
 
     try {
-      const userStoreEntries = await getUserStoreIds(Number(USER_SEED));
+      const userStoreEntries = await getUserStoreIds(userId);
       const selectedEntry = userStoreEntries.find(entry => entry.storeId === storeId);
 
       if (!selectedEntry) {
@@ -153,7 +155,7 @@ const handleCallbackQuery = () => async (ctx: Context) => {
         return;
       }
 
-      const secret = await retrieveSecret(storeId, selectedEntry.secretName, USER_SEED.toString());
+      const secret = await retrieveSecret(storeId, selectedEntry.secretName, userId.toString());
 
       if (selectedEntry.contentType === 'image') {
         await handleImageResponse(ctx, secret, selectedEntry.secretName);

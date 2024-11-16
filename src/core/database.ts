@@ -16,7 +16,7 @@ type StoreEntry = {
 
 type User = {
   userSeed: number
-  appIds: string[] // Changed to string array
+  appId: string
   storeIds: StoreEntry[]
   createdAt: string // Added creation timestamp
   lastUpdated: string // Added last updated timestamp
@@ -27,11 +27,11 @@ type Schema = {
 }
 
 // Initialize Vercel KV client
-const kv = ENVIRONMENT === 'production' 
+const kv = ENVIRONMENT === 'production'
   ? createClient({
-      url: process.env.KV_REST_API_URL!,
-      token: process.env.KV_REST_API_TOKEN!,
-    })
+    url: process.env.KV_REST_API_URL!,
+    token: process.env.KV_REST_API_TOKEN!,
+  })
   : null
 
 // Simple JSON operations
@@ -48,45 +48,38 @@ const writeJson = (data: Schema) => {
 }
 
 export async function saveUserStoreId(
-    userSeed: number, 
-    storeId: string, 
-    secretName: string,
-    thumbnail?: string,
-    contentType?: 'image' | 'text'
-  ) {
-    const newEntry: StoreEntry = {
-      storeId,
-      secretName,
-      createdAt: new Date().toISOString(),
-      thumbnail,
-      contentType
-    }
-  
-    if (ENVIRONMENT === 'production' && kv) {
-      const existingIds = await kv.get<StoreEntry[]>(`user:${userSeed}`) || []
-      existingIds.push(newEntry)
-      await kv.set(`user:${userSeed}`, existingIds)
-    } else {
-      const data = readJson()
-      const existingUser = data.users.find(u => u.userSeed === userSeed)
-      
-      if (existingUser) {
-        existingUser.storeIds.push(newEntry)
-      } else {
-        data.users.push({
-          userSeed,
-          appIds: [], // Initialize with empty array
-          storeIds: [newEntry],
-          createdAt: new Date().toISOString(),
-          lastUpdated: new Date().toISOString()
-        })
-      }
-      writeJson(data)
-    }
-    
-    debug(`Saved store ID ${storeId} for user ${userSeed}`)
-    return newEntry
+  userSeed: number,
+  storeId: string,
+  secretName: string,
+  thumbnail?: string,
+  contentType?: 'image' | 'text'
+) {
+  const newEntry: StoreEntry = {
+    storeId,
+    secretName,
+    createdAt: new Date().toISOString(),
+    thumbnail,
+    contentType
   }
+
+  if (ENVIRONMENT === 'production' && kv) {
+    const existingIds = await kv.get<StoreEntry[]>(`user:${userSeed}`) || []
+    existingIds.push(newEntry)
+    await kv.set(`user:${userSeed}`, existingIds)
+  } else {
+    const data = readJson()
+    const existingUser = data.users.find(u => u.userSeed === userSeed)
+
+    if (!existingUser) return;
+
+    existingUser.storeIds.push(newEntry);
+
+    writeJson(data)
+  }
+
+  debug(`Saved store ID ${storeId} for user ${userSeed}`)
+  return newEntry
+}
 
 export async function getUserStoreIds(userSeed: number) {
   if (ENVIRONMENT === 'production' && kv) {
@@ -106,14 +99,14 @@ export async function removeUserStoreId(userSeed: number, storeId: string) {
   } else {
     const data = readJson();
     const user = data.users.find(u => u.userSeed === userSeed);
-    
+
     if (user) {
       user.storeIds = user.storeIds.filter(entry => entry.storeId !== storeId);
       user.lastUpdated = new Date().toISOString();
       writeJson(data);
     }
   }
-  
+
   debug(`Removed store ID ${storeId} for user ${userSeed}`);
 }
 
@@ -123,19 +116,17 @@ export async function saveUserAppId(userSeed: number, appId: string) {
   } else {
     const data = readJson();
     const existingUser = data.users.find(u => u.userSeed === userSeed);
-    
-    if (existingUser) {
-      existingUser.appIds.push(appId);
-      existingUser.lastUpdated = new Date().toISOString();
-    } else {
-      data.users.push({
-        userSeed,
-        appIds: [appId],
-        storeIds: [],
-        createdAt: new Date().toISOString(),
-        lastUpdated: new Date().toISOString()
-      });
-    }
+
+    if (existingUser) return;
+
+    data.users.push({
+      userSeed,
+      appId: appId,
+      storeIds: [],
+      createdAt: new Date().toISOString(),
+      lastUpdated: new Date().toISOString()
+    });
+
     writeJson(data);
   }
   debug(`Saved app ID ${appId} for user ${userSeed}`);
@@ -147,6 +138,6 @@ export async function getUserAppId(userSeed: number): Promise<string | null> {
   } else {
     const data = readJson();
     const user = data.users.find(u => u.userSeed === userSeed);
-    return user?.appIds[user.appIds.length - 1] || null; // Return the most recent app ID
+    return user?.appId || null; // Return the most recent app ID
   }
 }

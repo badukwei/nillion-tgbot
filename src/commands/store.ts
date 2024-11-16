@@ -35,18 +35,17 @@ export const storeValue = async (userSeed: string, base64Image: string, secretNa
                 },
             }),
         });
-
         const result = await response.json();
-        
+
         // Save to local database with thumbnail
         await saveUserStoreId(
-            Number(userSeed), 
-            result.store_id, 
+            Number(userSeed),
+            result.store_id,
             secretName,
-            thumbnail, 
+            thumbnail,
             'image'
-          );
-        
+        );
+
         return result.store_id;
     } catch (error) {
         debug('Error storing value:', error);
