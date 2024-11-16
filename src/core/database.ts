@@ -94,7 +94,6 @@ export async function getUserStoreIds(userSeed: number) {
   } else {
     const data = readJson()
     const user = data.users.find(u => u.userSeed === userSeed)
-    console.log('User:', user);
     return user?.storeIds || []
   }
 }
