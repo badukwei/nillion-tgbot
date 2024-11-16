@@ -67,7 +67,6 @@ const list = () => async (ctx: Context) => {
     // 2. Separately handle local thumbnails
     const userStoreEntries = await getUserStoreIds(Number(USER_SEED));
     const images = userStoreEntries.filter(entry => entry.contentType === 'image');
-    console.log('Images:', images);
     if (images.length > 0) {
       await ctx.reply('🖼️ Your stored image thumbnails:');
 
