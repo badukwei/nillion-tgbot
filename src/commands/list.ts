@@ -1,5 +1,8 @@
 import { Context, Markup } from "telegraf";
+import { getUserStoreIds } from '../core/database';
+import createDebug from 'debug';
 
+const debug = createDebug('bot:list_command');
 const APP_ID = process.env.NILLION_APP_ID || '';
 const API_BASE = 'https://nillion-storage-apis-v0.onrender.com';
 
@@ -41,18 +44,68 @@ const fetchPageData = async (page: number, pageSize: number): Promise<{ items: S
 
 const list = () => async (ctx: Context) => {
   try {
+    const userSeed = ctx.from?.id.toString();
+    if (!userSeed) {
+      await ctx.reply('Could not identify user');
+      return;
+    }
+
+    // 1. Fetch API store objects
     const page = 0;
     const { items, hasNextPage } = await fetchPageData(page, ITEMS_PER_PAGE);
 
     if (!items || items.length === 0) {
-      return ctx.reply('No stored images found.');
+      return ctx.reply('No stored items found.');
     }
 
-    const buttons = generateButtons(items, page, hasNextPage);
-    await ctx.reply('List of stored images:', buttons);
+    // Display store objects with pagination
+    const buttons = generateButtons(
+      items.map(item => ({ 
+        store_id: item.store_id, 
+        secret_name: `Store: ${item.store_id}`
+      })),
+      page,
+      hasNextPage
+    );
+    await ctx.reply('📋 Check your images: ', buttons);
+
+    // 2. Separately handle local thumbnails
+    const userStoreEntries = await getUserStoreIds(Number(userSeed));
+    const images = userStoreEntries.filter(entry => entry.contentType === 'image');
+
+    if (images.length > 0) {
+      await ctx.reply('🖼️ Your stored image thumbnails:');
+
+      // Handle thumbnails
+      const mediaGroup = [];
+      for (const img of images) {
+        if (img.thumbnail) {
+          const imageBuffer = Buffer.from(img.thumbnail, 'base64');
+          mediaGroup.push({
+            type: 'photo' as const,
+            media: { source: imageBuffer },
+            caption: `ID: ${img.storeId}`
+          });
+        }
+      }
+
+      if (mediaGroup.length > 0) {
+        await ctx.replyWithMediaGroup(mediaGroup);
+      }
+
+      // List any images without thumbnails
+      const imagesWithoutThumbnails = images.filter(img => !img.thumbnail);
+      if (imagesWithoutThumbnails.length > 0) {
+        let noThumbMessage = '📸 Images without thumbnails:\n';
+        imagesWithoutThumbnails.forEach(img => {
+          noThumbMessage += `- ${img.storeId}\n`;
+        });
+        await ctx.reply(noThumbMessage);
+      }
+    }
   } catch (error) {
-    console.error('Error fetching initial data:', error);
-    await ctx.reply('An error occurred while listing stored images.');
+    debug('Error listing store IDs:', error);
+    await ctx.reply('An error occurred while listing stored items.');
   }
 };
 
@@ -64,6 +117,8 @@ const handleCallbackQuery = () => async (ctx: Context) => {
   if (!ctx.callbackQuery || !isDataCallbackQuery(ctx.callbackQuery)) return;
 
   const data = ctx.callbackQuery.data;
+  const userSeed = ctx.from?.id.toString();
+  if (!userSeed) return;
 
   // Handle page navigation
   if (data.startsWith('page_')) {

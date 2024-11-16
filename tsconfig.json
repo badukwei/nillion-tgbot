@@ -10,7 +10,9 @@
     "allowSyntheticDefaultImports": true,
     "outDir": "public",
     "lib": ["ESNext", "DOM"],
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true
   },
   "exclude": ["node_modules"]
 }
