@@ -1,34 +1,61 @@
-# Telegram Bot Vercel Boilerplate
+# Nillionly fans Telegram Bot 🤖
 
-Telegram Bot Vercel Boilerplate based on Node.js and [Telegraf](https://github.com/telegraf/telegraf) framework.
+## Project Description
 
-This template inspired by [Telegram Bot Boilerplate](https://github.com/yakovlevyuri/telegram-bot-boilerplate) for easily deploy to [Vercel](https://vercel.com).
+A secure Telegram bot powered by Nillion's advanced encryption technology that enables private photo sharing with end-to-end encryption. Built with Node.js and the Telegraf framework.
 
-[![Live Demo](https://img.shields.io/badge/Medium-12100E?style=for-the-badge&logo=medium&logoColor=white)](https://medium.com/@7rodma/deploy-a-serverless-telegram-chatbot-using-vercel-57665d942a58)
+## Short Description
 
-## Before you start
+Secure photo sharing Telegram bot with Nillion encryption for maximum privacy and security!
 
-First rename `.env-sample` file to `.env` and fill in all necessary values.
+## How it's Made
 
+We built this bot using a powerful combination of technologies:
+
+* Node.js & TypeScript: For type-safe backend development
+* Telegraf: For Telegram bot framework integration
+* Nillion SDK: For advanced encryption capabilities
+  * @nillion/client-react-hooks
+  * @nillion/client-vms
+  * @nillion/client-wasm
+
+The bot leverages Nillion's encryption technology to provide secure photo storage and sharing. Photos are processed using Sharp for optimization before being encrypted and stored. The bot runs on Vercel's serverless infrastructure using their KV storage for data persistence.
+
+Key features include:
+
+* End-to-end encrypted photo storage
+* Secure photo retrieval
+* Image compression and thumbnail generation
+* User account management
+* Command-based interaction
+
+## Getting Started
+
+### Run locally
+
+1. Run `yarn` to install dependencies
+2. Run `yarn dev` to start the bot locally
+
+### Simply use the bot
+
+Use the bot [@nillion_private_storage_bot](https://t.me/nillion_private_storage_bot)
+
+## Project Structure
+
+```bash
+nillion-telegram-bot/
+├── src/
+│   ├── callbacks/
+│   ├── commands/
+│   ├── core/
+│   ├── text/
+│   ├── utils/
+│   └── index.ts
+├── public/
+└── package.json
 ```
-BOT_TOKEN="<YOUR_BOT_API_TOKEN>"
-```
 
-## Start your local server
+## Attribution
 
-```
-yarn
-yarn dev
-```
-
-## Production
-
-You can fork this template and do the necessary changes you need. Then you when are done with your changes simply goto [vercel git import](https://vercel.com/import/git).
-
-Reference to [this update](https://vercel.com/docs/security/deployment-protection#migrating-to-standard-protection), you need turn off `Vercel Authentication`, Settings => Deployment Protection
-
-Feel free to create PR!
-
-## Demo
-
-You can see a working version of the bot at [@Node_api_m_bot](https://t.me/Node_api_m_bot)
+1. This bot is built using the Nillion storage API and [Telegraf: For Telegram bot framework integration](https://github.com/sollidy/telegram-bot-vercel-boilerplate)
+2. This project is supported by ETH Belgrade hackerhouse
