@@ -97,3 +97,22 @@ export async function getUserStoreIds(telegramId: number) {
     return user?.storeIds || []
   }
 }
+
+export async function removeUserStoreId(telegramId: number, storeId: string) {
+  if (ENVIRONMENT === 'production' && kv) {
+    const existingIds = await kv.get<StoreEntry[]>(`user:${telegramId}`) || [];
+    const updatedIds = existingIds.filter(entry => entry.storeId !== storeId);
+    await kv.set(`user:${telegramId}`, updatedIds);
+  } else {
+    const data = readJson();
+    const user = data.users.find(u => u.telegramId === telegramId);
+    
+    if (user) {
+      user.storeIds = user.storeIds.filter(entry => entry.storeId !== storeId);
+      user.lastUpdated = new Date().toISOString();
+      writeJson(data);
+    }
+  }
+  
+  debug(`Removed store ID ${storeId} for user ${telegramId}`);
+}

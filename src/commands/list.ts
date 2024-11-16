@@ -6,6 +6,7 @@ import { retrieveSecret, handleImageResponse } from './retrieve';
 const debug = createDebug('bot:list_command');
 const APP_ID = process.env.NILLION_APP_ID || '';
 const API_BASE = 'https://nillion-storage-apis-v0.onrender.com';
+const USER_SEED = process.env.USER_SEED || '';
 
 type StoreItem = {
     store_id: string;
@@ -46,8 +47,7 @@ const fetchPageData = async (page: number, pageSize: number): Promise<{ items: S
 
 const list = () => async (ctx: Context) => {
   try {
-    const userSeed = ctx.from?.id.toString();
-    if (!userSeed) {
+    if (!USER_SEED) {
       await ctx.reply('Could not identify user');
       return;
     }
@@ -65,7 +65,7 @@ const list = () => async (ctx: Context) => {
     await ctx.reply('📋 Store IDs:', buttons);
 
     // 2. Separately handle local thumbnails
-    const userStoreEntries = await getUserStoreIds(Number(userSeed));
+    const userStoreEntries = await getUserStoreIds(Number(USER_SEED));
     const images = userStoreEntries.filter(entry => entry.contentType === 'image');
 
     if (images.length > 0) {
@@ -112,8 +112,7 @@ const handleCallbackQuery = () => async (ctx: Context) => {
   if (!ctx.callbackQuery || !isDataCallbackQuery(ctx.callbackQuery)) return;
 
   const data = ctx.callbackQuery.data;
-  const userSeed = ctx.from?.id.toString();
-  if (!userSeed) return;
+  if (!USER_SEED) return;
 
   // Handle page navigation
   if (data.startsWith('page_')) {
@@ -138,7 +137,7 @@ const handleCallbackQuery = () => async (ctx: Context) => {
     const storeId = data.split('_')[1];
     
     try {
-      const userStoreEntries = await getUserStoreIds(Number(userSeed));
+      const userStoreEntries = await getUserStoreIds(Number(USER_SEED));
       const selectedEntry = userStoreEntries.find(entry => entry.storeId === storeId);
       
       if (!selectedEntry) {
@@ -146,7 +145,7 @@ const handleCallbackQuery = () => async (ctx: Context) => {
         return;
       }
   
-      const secret = await retrieveSecret(storeId, selectedEntry.secretName, userSeed);
+      const secret = await retrieveSecret(storeId, selectedEntry.secretName, USER_SEED);
   
       if (selectedEntry.contentType === 'image') {
         await handleImageResponse(ctx, secret, selectedEntry.secretName);
