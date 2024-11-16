@@ -1,5 +1,6 @@
 import { Context } from 'telegraf';
 import createDebug from 'debug';
+import { getUserAppId } from '../core/database';
 
 const debug = createDebug('bot:nillion_retrieve');
 
@@ -44,6 +45,10 @@ export const retrieveValue = () => async (ctx: Context) => {
       await ctx.reply('Could not identify user');
       return;
     }
+    const appId = await getUserAppId(Number(userId));
+    if (!appId) {
+      throw new Error('Please create an account first using /create');
+    }
 
     const messageText = ctx.message?.text?.split(' ');
     if (!messageText || messageText.length < 3) {
@@ -63,6 +68,6 @@ export const retrieveValue = () => async (ctx: Context) => {
     }
   } catch (error) {
     debug('Error retrieving value:', error);
-    await ctx.reply('Error: ' + (error as Error).message);
+    await ctx.reply((error as Error).message);
   }
 };

@@ -56,6 +56,10 @@ const list = () => async (ctx: Context) => {
       await ctx.reply('Could not identify user');
       return;
     }
+    const appId = await getUserAppId(Number(userId));
+    if (!appId) {
+      throw new Error('Please create an account first using /create');
+    }
 
     // 1. Fetch API store objects
     const page = 0;

@@ -2,9 +2,10 @@ import { Context, Markup, Telegraf } from 'telegraf';
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { development, production } from './core';
 import axios from 'axios';
-import { help, about, list, retrieveValue, storeValue, handleCallbackQuery, createUserStoreID } from './commands';
+import { start, help, about, list, retrieveValue, storeValue, handleCallbackQuery, createUserStoreID } from './commands';
 
 import createDebug from 'debug';
+import { getUserAppId } from './core/database';
 const debug = createDebug('bot:index');
 
 const BOT_TOKEN = process.env.BOT_TOKEN || '';
@@ -22,12 +23,16 @@ bot.telegram.setMyCommands([
   { command: 'help', description: 'How to use this bot' }
 ]);
 
-// bot.command('create', createUserStoreID());
+bot.command('start', start());
 bot.command('store', async (ctx) => {
   const userId = ctx.message.from.id;
   if (!userId) {
     await ctx.reply('Could not identify user');
     return;
+  }
+  const appId = await getUserAppId(Number(userId));
+  if (!appId) {
+    throw new Error('Please create an account first using /create');
   }
 
   userStoreStates[userId] = { action: 'awaiting_image' };
