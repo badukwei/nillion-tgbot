@@ -10,9 +10,9 @@ const about = () => async (ctx: Context) => {
     `A secure photo sharing bot powered by Nillion's advanced encryption technology\\. ` +
     `This bot allows users to send photos securely with end\\-to\\-end encryption\\.\n\n` +
     `🔒 *Features*:\n` +
-    `\\- Secure photo transmission\n` +
-    `\\- End\\-to\\-end encryption\n` +
-    `\\- Privacy\\-first design\n\n` +
+    `- Secure photo transmission\n` +
+    `- End-to-end encryption\n` +
+    `- Privacy-first design\n\n` +
     `Type /help to learn how to use this bot\.\n\n` +
     `Created by: ${author}`;
   debug(`Triggered "about" command with message \n${message}`);

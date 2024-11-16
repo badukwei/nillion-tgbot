@@ -8,9 +8,9 @@ const USER_SEED = Number(process.env.USER_SEED || '');
 const API_BASE = 'https://nillion-storage-apis-v0.onrender.com';
 
 type StoreItem = {
-    store_id: string;
-    secret_name: string;
-    content_type?: 'image' | 'text';
+  store_id: string;
+  secret_name: string;
+  content_type?: 'image' | 'text';
 };
 
 const ITEMS_PER_PAGE = 5;
@@ -35,7 +35,7 @@ const generateButtons = (data: StoreItem[], page: number, hasNextPage: boolean) 
 
 const fetchPageData = async (page: number, pageSize: number, userSeed: number): Promise<{ items: StoreItem[], hasNextPage: boolean }> => {
   const appId = await getUserAppId(userSeed);
-  
+
   if (!appId) {
     throw new Error('Please create an account first using /create');
   }
@@ -67,7 +67,7 @@ const list = () => async (ctx: Context) => {
 
     // Display store objects with pagination
     const buttons = generateButtons(items, page, hasNextPage);
-    await ctx.reply('📋 Store IDs:', buttons);
+    await ctx.reply('📋 Here are your images:', buttons);
 
     // 2. Separately handle local thumbnails
     const userStoreEntries = await getUserStoreIds(Number(USER_SEED));
@@ -143,24 +143,24 @@ const handleCallbackQuery = () => async (ctx: Context) => {
 
   if (data.startsWith('store_')) {
     const storeId = data.split('_')[1];
-    
+
     try {
       const userStoreEntries = await getUserStoreIds(Number(USER_SEED));
       const selectedEntry = userStoreEntries.find(entry => entry.storeId === storeId);
-      
+
       if (!selectedEntry) {
         await ctx.reply('Store ID not found');
         return;
       }
-  
+
       const secret = await retrieveSecret(storeId, selectedEntry.secretName, USER_SEED.toString());
-  
+
       if (selectedEntry.contentType === 'image') {
         await handleImageResponse(ctx, secret, selectedEntry.secretName);
       } else {
         await ctx.reply(`Retrieved text: ${secret}`);
       }
-  
+
       await ctx.answerCbQuery();
     } catch (error) {
       debug('Error retrieving value:', error);
