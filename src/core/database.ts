@@ -29,7 +29,7 @@ type Schema = {
 // Initialize Vercel KV client
 const kv = ENVIRONMENT === 'production' 
   ? createClient({
-      url: process.env.KV_REST_API_URL!,
+      url: process.env.KV_URL!,
       token: process.env.KV_REST_API_TOKEN!,
     })
   : null

@@ -14,25 +14,40 @@ const production = async (
   bot: Telegraf<Context<Update>>,
 ) => {
   debug('Bot runs in production mode');
-  debug(`setting webhook: ${VERCEL_URL}`);
 
-  if (!VERCEL_URL) {
-    throw new Error('VERCEL_URL is not set.');
-  }
+  try {
+    const webhookUrl = `https://${process.env.VERCEL_URL}/api`;
+    debug(`Setting webhook: ${webhookUrl}`);
 
-  const getWebhookInfo = await bot.telegram.getWebhookInfo();
-  if (getWebhookInfo.url !== VERCEL_URL + '/api') {
-    debug(`deleting webhook ${VERCEL_URL}`);
-    await bot.telegram.deleteWebhook();
-    debug(`setting webhook: ${VERCEL_URL}/api`);
-    await bot.telegram.setWebhook(`${VERCEL_URL}/api`);
-  }
+    // Initialize bot commands first
+    try {
+      await bot.telegram.setMyCommands([
+        { command: 'about', description: 'About this bot' },
+        { command: 'create', description: 'Create your storage' },
+        { command: 'store', description: 'Store an image' },
+        { command: 'list', description: 'Get all stored images' },
+        { command: 'retrieve', description: 'Retrieve an image' },
+        { command: 'help', description: 'How to use this bot' }
+      ]);
+    } catch (cmdError) {
+      debug('Error setting commands:', cmdError);
+      // Continue even if setting commands fails
+    }
 
-  if (req.method === 'POST') {
-    await bot.handleUpdate(req.body as unknown as Update, res);
-  } else {
-    res.status(200).json('Listening to bot events...');
+    // Set webhook
+    const webhookInfo = await bot.telegram.getWebhookInfo();
+    if (webhookInfo.url !== webhookUrl) {
+      await bot.telegram.deleteWebhook();
+      await bot.telegram.setWebhook(webhookUrl);
+    }
+
+    if (req.method === 'POST') {
+      await bot.handleUpdate(req.body as Update, res);
+    } else {
+      res.status(200).json({ status: 'ok', webhook: webhookUrl });
+    }
+  } catch (error) {
+    debug('Production error:', error);
+    throw error;
   }
-  debug(`starting webhook on port: ${PORT}`);
 };
-export { production };
