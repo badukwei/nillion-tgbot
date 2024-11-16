@@ -53,10 +53,13 @@ export const production = async (
     } else {
       res.status(200).json({ status: 'ok', webhook: webhookUrl });
     }
-  } catch (error) {
-    debug('Production error:', error);
+  } catch (error: any) {
     debug('Production error:', error);
     console.error('Full error details:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined 
+    });
     throw error;
   }
 };
